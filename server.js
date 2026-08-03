@@ -3,6 +3,7 @@ const http = require('http');
 const path = require('path');
 const fs = require('fs');
 const { Server } = require('socket.io');
+const QRCode = require('qrcode');
 
 const app = express();
 const server = http.createServer(app);
@@ -332,6 +333,21 @@ setInterval(() => {
 ------------------------------------------------------------------ */
 app.use(express.static(path.join(__dirname, 'public'), { maxAge: '1h' }));
 app.get('/host', (_, res) => res.sendFile(path.join(__dirname, 'public', 'host.html')));
+// Karekod sunucuda üretilir: dış CDN'e bağımlı değil, adresi isteğin kendisinden alır
+app.get('/qr.svg', async (req, res) => {
+    try {
+        const proto = (req.headers['x-forwarded-proto'] || req.protocol || 'http').split(',')[0].trim();
+        const adres = `${proto}://${req.headers.host}/`;
+        const svg = await QRCode.toString(adres, {
+            type: 'svg', margin: 1, errorCorrectionLevel: 'M',
+            color: { dark: '#0B0A1F', light: '#FFFFFF' }
+        });
+        res.type('image/svg+xml').set('Cache-Control', 'no-store').send(svg);
+    } catch (e) {
+        res.status(500).send('qr uretilemedi');
+    }
+});
+
 app.get('/saglik', (_, res) => res.json({ ok: true, oyuncu: bagliSayisi(), durum: oyun.durum }));
 
 const PORT = process.env.PORT || 3000;

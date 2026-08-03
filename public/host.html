@@ -38,7 +38,7 @@ h1{font-family:'Bricolage Grotesque',sans-serif; font-weight:800; margin:0; line
   -webkit-background-clip:text; background-clip:text; color:transparent}
 .katilim{display:flex; align-items:center; gap:5vw; margin-top:1vh}
 .qr{background:#fff; padding:18px; border-radius:24px; line-height:0; box-shadow:0 24px 60px rgba(0,0,0,.5)}
-.qr canvas,.qr img{width:26vh!important; height:26vh!important; display:block}
+.qr img{width:26vh; height:26vh; display:block}
 .katilBilgi{text-align:left}
 .katilBilgi u{display:block; text-decoration:none; color:var(--sis); font-size:1.4vw; letter-spacing:.25em;
   text-transform:uppercase; font-weight:800; margin-bottom:.8vh}
@@ -110,7 +110,7 @@ h1{font-family:'Bricolage Grotesque',sans-serif; font-weight:800; margin:0; line
   backdrop-filter:blur(10px); z-index:5}
 #qrMini.acik{display:flex}
 #qrMini .kutu{background:#fff; padding:6px; border-radius:10px; line-height:0}
-#qrMini canvas{width:9vh!important; height:9vh!important; display:block}
+#qrMini img{width:9vh; height:9vh; display:block}
 #qrMini .yazi{font-size:.95vw; font-weight:800; color:var(--sis); line-height:1.5; max-width:11vw}
 #qrMini .yazi b{display:block; color:var(--neon); font-size:1.05vw; word-break:break-all}
 @media(prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important}}
@@ -132,7 +132,7 @@ h1{font-family:'Bricolage Grotesque',sans-serif; font-weight:800; margin:0; line
   <div class="rozet">Festival Quiz</div>
   <h1>Telefonunu çıkar, yarışa katıl</h1>
   <div class="katilim">
-    <div class="qr" id="qr"></div>
+    <div class="qr"><img id="qr" src="/qr.svg" alt="Katılım karekodu"></div>
     <div class="katilBilgi">
       <u>Karekodu okut ya da yaz</u>
       <div class="link" id="link">—</div>
@@ -181,11 +181,10 @@ h1{font-family:'Bricolage Grotesque',sans-serif; font-weight:800; margin:0; line
 
 <!-- KÖŞE QR: yarışma sürerken geç kalanlar da katılabilsin -->
 <div id="qrMini">
-  <div class="kutu" id="qrMiniKod"></div>
+  <div class="kutu"><img id="qrMiniKod" src="/qr.svg" alt=""></div>
   <div class="yazi">Sonradan katıl<b id="qrMiniLink">—</b></div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <script src="/socket.io/socket.io.js"></script>
 <script>
 const socket = io({ transports:['websocket','polling'] });
@@ -218,22 +217,13 @@ socket.on('connect', () => {
 
 /* --- katılım linki + QR --- */
 function qrCiz(){
-  const url = location.origin + '/';
-  const kisa = url.replace(/^https?:\/\//,'').replace(/\/$/,'');
+  const kisa = location.host;
   $('link').innerText = kisa;
   $('qrMiniLink').innerText = kisa;
-
-  if (!(window.QRCode && QRCode.toCanvas)){
-    $('qr').style.display = 'none';        // internet yoksa yazılı adres yeterli
-    $('qrMiniKod').style.display = 'none';
-    return;
-  }
-  [['qr', 520], ['qrMiniKod', 260]].forEach(([hedef, boyut]) => {
-    const c = document.createElement('canvas');
-    QRCode.toCanvas(c, url, { width:boyut, margin:1, color:{ dark:'#0B0A1F', light:'#FFFFFF' } }, err => {
-      if (!err){ $(hedef).innerHTML = ''; $(hedef).appendChild(c); }
-    });
-  });
+  // Karekod sunucudan geliyor; tazelemek için adresi bir kez yeniliyoruz
+  const src = '/qr.svg?t=' + Date.now();
+  $('qr').src = src;
+  $('qrMiniKod').src = src;
 }
 
 function devam(){ if (yetkili) socket.emit('hostDevam'); }
