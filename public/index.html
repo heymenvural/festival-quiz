@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0B0A1F">
+<title>Festival Quiz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --gece:#0B0A1F; --mor:#241548; --sahne:#7C3AED; --neon:#FFE45E; --sis:#B9B3D6;
+  --s0:#FF2E63; --s1:#17B9E0; --s2:#FFB020; --s3:#2BC275;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  margin:0; background:var(--gece); color:#fff;
+  font-family:'Manrope',system-ui,sans-serif;
+  overflow:hidden; overscroll-behavior:none;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+}
+.perde{position:fixed; inset:0; display:none; flex-direction:column; padding:16px}
+.perde.acik{display:flex}
+
+/* --- LOBİ --- */
+#lobi{align-items:center; justify-content:center; text-align:center; gap:4px}
+.rozet{font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:13px; letter-spacing:.28em;
+  text-transform:uppercase; color:var(--neon); opacity:.85}
+.ad{font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:clamp(30px,9vw,46px); line-height:1.1;
+  margin:18px 0 6px; background:linear-gradient(180deg,#fff,#C9B6FF); -webkit-background-clip:text; background-clip:text; color:transparent}
+.alt{color:var(--sis); font-size:15px; max-width:300px; line-height:1.5}
+.puanKutu{margin-top:26px; padding:14px 26px; border-radius:999px; border:1px solid rgba(255,255,255,.14);
+  background:rgba(255,255,255,.05); font-weight:800; font-size:17px}
+.puanKutu b{color:var(--neon)}
+.nabiz{width:9px;height:9px;border-radius:50%;background:var(--s3);display:inline-block;margin-right:7px;
+  animation:nb 1.6s ease-in-out infinite}
+@keyframes nb{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.35;transform:scale(.7)}}
+
+/* --- SORU --- */
+#soru{gap:10px}
+.ust{display:flex; align-items:center; gap:12px}
+.sayac{font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:34px; min-width:52px;
+  color:var(--neon); font-variant-numeric:tabular-nums; line-height:1}
+.sayac.kritik{color:var(--s0); animation:tik .5s steps(2) infinite}
+@keyframes tik{50%{opacity:.35}}
+.cubuk{flex:1; height:8px; border-radius:99px; background:rgba(255,255,255,.1); overflow:hidden}
+.cubuk i{display:block; height:100%; width:100%; background:linear-gradient(90deg,var(--neon),var(--s0));
+  transform-origin:left; transition:transform 1s linear}
+.soruNo{font-size:13px; font-weight:800; color:var(--sis); letter-spacing:.1em}
+.izgara{flex:1; display:grid; grid-template-columns:1fr 1fr; grid-template-rows:1fr 1fr; gap:10px; min-height:0}
+.sik{border:none; border-radius:20px; color:#fff; cursor:pointer; position:relative;
+  display:flex; align-items:center; justify-content:center; padding:0;
+  box-shadow:0 7px 0 rgba(0,0,0,.32); transition:transform .08s, box-shadow .08s, opacity .15s}
+.sik:active{transform:translateY(7px); box-shadow:0 0 0 rgba(0,0,0,.32)}
+.sik:focus-visible{outline:3px solid #fff; outline-offset:3px}
+.sik span{font-size:clamp(44px,15vw,74px); line-height:1; filter:drop-shadow(0 3px 6px rgba(0,0,0,.3))}
+.sik .harf{position:absolute; top:10px; left:14px; font-family:'Bricolage Grotesque',sans-serif;
+  font-size:16px; font-weight:800; opacity:.65}
+.k0{background:var(--s0)} .k1{background:var(--s1)} .k2{background:var(--s2)} .k3{background:var(--s3)}
+
+/* --- SONUÇ / BEKLEME --- */
+#sonuc{align-items:center; justify-content:center; text-align:center; gap:0}
+#sonuc.dogru{background:#12694A} #sonuc.yanlis{background:#7A1230} #sonuc.notr{background:var(--mor)}
+.ikon{font-size:76px; line-height:1; margin-bottom:6px; animation:zipla .45s cubic-bezier(.2,1.6,.4,1)}
+@keyframes zipla{from{transform:scale(.4); opacity:0}}
+.baslik{font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:clamp(32px,10vw,48px); margin:0}
+.kazanc{font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:40px; color:var(--neon); margin-top:10px}
+.detay{color:rgba(255,255,255,.82); font-size:15px; margin-top:10px; line-height:1.55; max-width:320px}
+.seri{margin-top:14px; padding:7px 16px; border-radius:99px; background:rgba(0,0,0,.28); font-weight:800; font-size:14px}
+.siraKutu{margin-top:24px; display:flex; gap:10px}
+.mini{background:rgba(0,0,0,.28); padding:12px 18px; border-radius:16px}
+.mini u{display:block; text-decoration:none; font-size:11px; letter-spacing:.14em; color:rgba(255,255,255,.6);
+  text-transform:uppercase; font-weight:800}
+.mini b{font-family:'Bricolage Grotesque',sans-serif; font-size:26px; font-weight:800}
+@media(prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important}}
+</style>
+</head>
+<body>
+
+<!-- LOBİ -->
+<div class="perde acik" id="lobi">
+  <div class="rozet">Festival Quiz</div>
+  <div class="ad" id="adim">Bağlanıyor…</div>
+  <div class="alt" id="mesaj"><span class="nabiz"></span>Sahnedeki ekranı izle, yarışma birazdan başlıyor.</div>
+  <div class="puanKutu">Puanın <b id="puanim">0</b></div>
+</div>
+
+<!-- SORU -->
+<div class="perde" id="soru">
+  <div class="ust">
+    <div class="sayac" id="sayac">20</div>
+    <div style="flex:1">
+      <div class="soruNo" id="soruNo">SORU 1</div>
+      <div class="cubuk"><i id="cubuk"></i></div>
+    </div>
+  </div>
+  <div class="izgara">
+    <button class="sik k0" onclick="cevapla(0)"><b class="harf">A</b><span>▲</span></button>
+    <button class="sik k1" onclick="cevapla(1)"><b class="harf">B</b><span>◆</span></button>
+    <button class="sik k2" onclick="cevapla(2)"><b class="harf">C</b><span>●</span></button>
+    <button class="sik k3" onclick="cevapla(3)"><b class="harf">D</b><span>■</span></button>
+  </div>
+</div>
+
+<!-- SONUÇ -->
+<div class="perde notr" id="sonuc">
+  <div class="ikon" id="ikon">✓</div>
+  <h1 class="baslik" id="sonucBaslik">Cevabın alındı</h1>
+  <div class="kazanc" id="kazanc"></div>
+  <div class="detay" id="sonucDetay">Dev ekrana bak.</div>
+  <div class="seri" id="seriKutu" style="display:none"></div>
+  <div class="siraKutu" id="siraKutu" style="display:none">
+    <div class="mini"><u>Sıran</u><b id="siram">-</b></div>
+    <div class="mini"><u>Toplam puan</u><b id="toplamPuan">0</b></div>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io({ transports:['websocket','polling'] });
+const $ = id => document.getElementById(id);
+let sayacId = null, kilit = false;
+
+function goster(hangi){
+  ['lobi','soru','sonuc'].forEach(p => $(p).classList.toggle('acik', p === hangi));
+}
+function titre(ms){ if(navigator.vibrate) try{ navigator.vibrate(ms); }catch(e){} }
+
+/* --- katılım: pid tarayıcıda saklanır, telefon kilitlense de puan kaybolmaz --- */
+socket.on('connect', () => socket.emit('katil', localStorage.getItem('fq_pid')));
+
+socket.on('hosgeldin', d => {
+  localStorage.setItem('fq_pid', d.pid);
+  $('adim').innerText = d.ad;
+  $('puanim').innerText = d.puan;
+  if (d.durum !== 'soru') goster('lobi');
+});
+
+/* --- soru geldi --- */
+socket.on('soru', d => {
+  kilit = false;
+  $('soruNo').innerText = `SORU ${d.no} / ${d.toplam}`;
+  goster('soru');
+  document.querySelectorAll('.sik').forEach(b => { b.disabled = false; b.style.opacity = 1; });
+  sayacBaslat(d.sure);
+  titre(40);
+});
+
+function sayacBaslat(sn){
+  clearInterval(sayacId);
+  let kalan = sn;
+  const cubuk = $('cubuk');
+  cubuk.style.transition = 'none';
+  cubuk.style.transform = 'scaleX(1)';
+  requestAnimationFrame(() => {
+    cubuk.style.transition = `transform ${sn}s linear`;
+    cubuk.style.transform = 'scaleX(0)';
+  });
+  $('sayac').innerText = kalan;
+  $('sayac').classList.remove('kritik');
+  sayacId = setInterval(() => {
+    kalan--;
+    $('sayac').innerText = Math.max(0, kalan);
+    if (kalan <= 5) $('sayac').classList.add('kritik');
+    if (kalan <= 0){
+      clearInterval(sayacId);
+      if (!kilit) bekleme('⏳','Süre doldu','Bu soruda cevap veremedin.');
+    }
+  }, 1000);
+}
+
+/* --- cevap --- */
+function cevapla(i){
+  if (kilit) return;
+  kilit = true;
+  clearInterval(sayacId);
+  socket.emit('cevap', i);
+  titre(25);
+  bekleme('✓','Cevabın alındı','Sonuç birazdan…');
+}
+
+function bekleme(ikon, baslik, detay){
+  const e = $('sonuc');
+  e.className = 'perde acik notr';
+  $('ikon').innerText = ikon;
+  $('sonucBaslik').innerText = baslik;
+  $('kazanc').innerText = '';
+  $('sonucDetay').innerText = detay;
+  $('seriKutu').style.display = 'none';
+  $('siraKutu').style.display = 'none';
+  goster('sonuc');
+}
+
+/* --- anlık doğru/yanlış (AYAR.ANLIK_GERI_BILDIRIM açıkken) --- */
+socket.on('cevapAlindi', d => {
+  if (!d.anlik) return;
+  boya(d.dogru, d.kazanilan, d.seri);
+  $('sonucDetay').innerText = 'Sıralama birazdan dev ekranda.';
+  $('puanim').innerText = d.toplamPuan;
+});
+
+/* --- soru bitti: kişisel sonuç + sıra --- */
+socket.on('kisiselSonuc', d => {
+  if (!d.cevapladi){
+    const e = $('sonuc');
+    e.className = 'perde acik notr';
+    $('ikon').innerText = '⏳';
+    $('sonucBaslik').innerText = 'Cevap yok';
+    $('kazanc').innerText = '';
+  } else {
+    boya(d.dogru, d.kazanilan, d.seri);
+  }
+  $('sonucDetay').innerText = d.dogru ? '' : `Doğru cevap: ${d.dogruMetin}`;
+  $('siram').innerText = d.sira + '.';
+  $('toplamPuan').innerText = d.toplamPuan;
+  $('siraKutu').style.display = 'flex';
+  $('puanim').innerText = d.toplamPuan;
+  goster('sonuc');
+});
+
+function boya(dogru, puan, seri){
+  const e = $('sonuc');
+  e.className = 'perde acik ' + (dogru ? 'dogru' : 'yanlis');
+  $('ikon').innerText = dogru ? '✓' : '✕';
+  $('sonucBaslik').innerText = dogru ? 'Doğru!' : 'Yanlış';
+  $('kazanc').innerText = dogru ? '+' + puan : '+0';
+  if (dogru && seri > 1){
+    $('seriKutu').innerText = `🔥 ${seri} soru üst üste doğru`;
+    $('seriKutu').style.display = 'block';
+  } else $('seriKutu').style.display = 'none';
+  titre(dogru ? [30,60,30] : 180);
+  goster('sonuc');
+}
+
+/* --- final --- */
+socket.on('finalSiran', d => {
+  const e = $('sonuc');
+  e.className = 'perde acik notr';
+  $('ikon').innerText = d.sira <= 3 ? '🏆' : '🎉';
+  $('sonucBaslik').innerText = 'Yarışma bitti';
+  $('kazanc').innerText = d.toplamPuan + ' puan';
+  $('sonucDetay').innerText = `${d.kisiSayisi} kişi arasında ${d.sira}. oldun.`;
+  $('seriKutu').style.display = 'none';
+  $('siraKutu').style.display = 'none';
+  goster('sonuc');
+});
+
+socket.on('sifirla', () => { clearInterval(sayacId); kilit = false; $('puanim').innerText = '0'; goster('lobi'); });
+socket.on('disconnect', () => { $('mesaj').innerHTML = 'Bağlantı koptu, tekrar bağlanılıyor…'; goster('lobi'); });
+</script>
+</body>
+</html>

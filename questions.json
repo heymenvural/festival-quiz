@@ -1,0 +1,62 @@
+[
+    {
+        "question": "Dünyanın en büyük okyanusu hangisidir?",
+        "options": ["Atlas", "Hint", "Pasifik", "Arktik"],
+        "correct": 2,
+        "sure": 15
+    },
+    {
+        "question": "Hangisi bir programlama dili değildir?",
+        "options": ["Python", "JavaScript", "HTML", "C++"],
+        "correct": 2,
+        "sure": 20
+    },
+    {
+        "question": "Türkiye'nin başkenti neresidir?",
+        "options": ["İstanbul", "Ankara", "İzmir", "Bursa"],
+        "correct": 1,
+        "sure": 10
+    },
+    {
+        "question": "Buharkent hangi ilimizin ilçesidir?",
+        "options": ["Denizli", "Aydın", "Muğla", "Manisa"],
+        "correct": 1,
+        "sure": 15
+    },
+    {
+        "question": "Bir gitarın standart olarak kaç teli vardır?",
+        "options": ["4", "5", "6", "7"],
+        "correct": 2,
+        "sure": 15
+    },
+    {
+        "question": "Aşağıdakilerden hangisi bir enstrüman değildir?",
+        "options": ["Bağlama", "Kanun", "Zurna", "Divan"],
+        "correct": 3,
+        "sure": 15
+    },
+    {
+        "question": "İncir denince akla gelen, coğrafi işaretli ilimiz hangisidir?",
+        "options": ["Aydın", "Mersin", "Rize", "Kars"],
+        "correct": 0,
+        "sure": 15
+    },
+    {
+        "question": "Ay'a ilk ayak basan insan kimdir?",
+        "options": ["Yuri Gagarin", "Neil Armstrong", "Buzz Aldrin", "Michael Collins"],
+        "correct": 1,
+        "sure": 15
+    },
+    {
+        "question": "Bir futbol maçı normal süresi kaç dakikadır?",
+        "options": ["80", "90", "100", "120"],
+        "correct": 1,
+        "sure": 10
+    },
+    {
+        "question": "Kırmızı ile sarının karışımı hangi rengi verir?",
+        "options": ["Yeşil", "Mor", "Turuncu", "Kahverengi"],
+        "correct": 2,
+        "sure": 10
+    }
+]
