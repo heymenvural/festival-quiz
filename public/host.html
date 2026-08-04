@@ -108,6 +108,14 @@ h1{font-family:'Bricolage Grotesque',sans-serif; font-weight:800; margin:0; line
   transform-origin:left; transform:scaleX(0)}
 .hazirlanYazi{color:var(--sis); font-size:1.3vw; font-weight:800; letter-spacing:.22em; text-transform:uppercase}
 
+/* Ses durum rozeti — IT ekibi sesin açık olup olmadığını görebilsin */
+.sesRozet{position:fixed; left:1.6vw; bottom:1.8vh; z-index:30; font-size:.95vw; font-weight:800;
+  padding:.8vh 1.2vw; border-radius:99px; border:2px solid; letter-spacing:.04em;
+  background:rgba(0,0,0,.45); backdrop-filter:blur(8px); transition:opacity .4s}
+.sesRozet.hazir{color:#2BC275; border-color:rgba(43,194,117,.5); opacity:.55}
+.sesRozet.bekliyor{color:#FFB020; border-color:#FFB020; animation:nabiz 1.6s ease-in-out infinite}
+.sesRozet.kapali{color:var(--sis); border-color:rgba(255,255,255,.25); opacity:.7}
+
 /* Host uyarı balonu */
 #uyari{position:fixed; left:50%; top:2vh; transform:translateX(-50%) translateY(-140%); z-index:40;
   background:var(--s0); color:#fff; font-weight:800; font-size:1.2vw; padding:1.2vh 2.2vw;
@@ -260,6 +268,7 @@ h1{font-family:'Bricolage Grotesque',sans-serif; font-weight:800; margin:0; line
 </div>
 
 <div id="uyari"></div>
+<div class="sesRozet bekliyor" id="sesDurum">🔇 Sesi açmak için ekrana tıkla</div>
 
 <!-- KÖŞE QR: yarışma sürerken geç kalanlar da katılabilsin -->
 <div id="qrMini">
@@ -278,15 +287,29 @@ let sayacId = null, yetkili = false;
    Dosya yok, sesler tarayıcıda üretiliyor. Tarayıcılar kendiliğinden ses
    çalmaya izin vermediği için ilk tıklamada (şifre girişi) devreye giriyor. */
 const Ses = (() => {
-  let ctx = null, acik = true;
+  let ctx = null, ana = null, acik = true;
   function baslat(){
     try{
-      if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
-      if (ctx.state === 'suspended') ctx.resume();
+      if (!ctx){
+        ctx = new (window.AudioContext || window.webkitAudioContext)();
+        ana = ctx.createGain();
+        ana.gain.value = 0.9;          // ana ses seviyesi
+        ana.connect(ctx.destination);
+      }
+      if (ctx.state === 'suspended') ctx.resume().then(durumYaz).catch(()=>{});
     }catch(e){}
+    durumYaz();
+  }
+  function hazirMi(){ return !!ctx && ctx.state === 'running'; }
+  function durumYaz(){
+    const e = document.getElementById('sesDurum');
+    if (!e) return;
+    if (!acik){ e.className = 'sesRozet kapali'; e.innerText = '🔇 Ses kapalı (M)'; return; }
+    if (hazirMi()){ e.className = 'sesRozet hazir'; e.innerText = '🔊 Ses açık'; }
+    else { e.className = 'sesRozet bekliyor'; e.innerText = '🔇 Sesi açmak için ekrana tıkla'; }
   }
   function ton(hz, sure, tip, siddet, gecikme){
-    if (!ctx || !acik) return;
+    if (!ctx || !acik || ctx.state !== 'running') return;
     const t = ctx.currentTime + (gecikme || 0);
     const o = ctx.createOscillator(), g = ctx.createGain();
     o.type = tip || 'sine';
@@ -294,20 +317,26 @@ const Ses = (() => {
     g.gain.setValueAtTime(0.0001, t);
     g.gain.linearRampToValueAtTime(siddet, t + .012);
     g.gain.exponentialRampToValueAtTime(.0001, t + sure);
-    o.connect(g); g.connect(ctx.destination);
+    o.connect(g); g.connect(ana);
     o.start(t); o.stop(t + sure + .03);
   }
   return {
-    baslat,
-    degistir(){ acik = !acik; return acik; },
-    tik(kalan){ ton(kalan <= 2 ? 1500 : 950, .07, 'square', .16); },
-    soruAcildi(){ ton(520,.12,'triangle',.20); ton(784,.18,'triangle',.20,.11); },
-    okumaBasladi(){ ton(392,.16,'sine',.16); },
-    sureBitti(){ ton(320,.26,'sawtooth',.18); ton(190,.42,'sawtooth',.16,.16); },
-    cevapAcildi(){ [523,659,784,1046].forEach((f,i) => ton(f,.32,'triangle',.16,i*.085)); },
-    final(){ [523,659,784,1046,1318,1568].forEach((f,i) => ton(f,.55,'triangle',.18,i*.13)); }
+    baslat, hazirMi, durumYaz,
+    degistir(){ acik = !acik; durumYaz(); return acik; },
+    tik(kalan){ ton(kalan <= 2 ? 1568 : 988, .10, 'square', .45); },
+    soruAcildi(){ ton(523,.14,'triangle',.5); ton(784,.22,'triangle',.5,.12); },
+    okumaBasladi(){ ton(392,.20,'sine',.42); },
+    sureBitti(){ ton(330,.30,'sawtooth',.5); ton(196,.48,'sawtooth',.45,.18); },
+    cevapAcildi(){ [523,659,784,1046].forEach((f,i) => ton(f,.36,'triangle',.42,i*.09)); },
+    final(){ [523,659,784,1046,1318,1568].forEach((f,i) => ton(f,.6,'triangle',.45,i*.13)); }
   };
 })();
+
+/* Tarayıcı, kullanıcı bir hareket yapmadan ses çalmaya izin vermez.
+   Şifre hatırlandığında otomatik giriş olduğu için hiç tıklama olmuyordu;
+   bu yüzden ekrandaki herhangi bir tıklama/tuş sesi devreye alıyor. */
+['pointerdown','keydown','click','touchstart'].forEach(olay =>
+  document.addEventListener(olay, () => Ses.baslat(), { passive:true }));
 
 function goster(h){
   ['giris','lobi','okuma','soru','sonuc','final'].forEach(x => $(x).classList.toggle('acik', x === h));
@@ -344,6 +373,7 @@ socket.on('connect', () => {
 // Ekran kazara yenilenirse yarışma kaldığı yerden devam eder
 socket.on('hostOnay', d => {
   yetkili = true;
+  Ses.baslat();
   localStorage.setItem('fq_host', $('sifre').value || localStorage.getItem('fq_host'));
   $('sayi').innerText = d.oyuncu;
   qrCiz();

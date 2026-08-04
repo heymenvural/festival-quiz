@@ -1,97 +1,77 @@
 [
     {
-        "question": "Buharkent Taze İncir Festivali hangi ilimizin sınırları içerisinde düzenlenmektedir?",
+        "question": "Buharkent hangi ilimizin ilçesidir?",
         "options": ["Denizli", "Aydın", "İzmir", "Muğla"],
         "correct": 1,
         "zorluk": "kolay"
     },
     {
-        "question": "Buharkent'in \"Taze İncirin Başkenti\" olarak anılmasının en büyük sebebi nedir?",
-        "options": [
-            "Türkiye'nin en eski ilçesi olması",
-            "Sadece kurutmalık incir üretmesi",
-            "Taze incir hasadının Türkiye'de ilk burada yapılması",
-            "İncirin dünyada sadece burada yetişmesi"
-        ],
-        "correct": 2,
-        "zorluk": "orta"
-    },
-    {
-        "question": "\"Erkenci\" taze incirin hasat coşkusu olan Buharkent Taze İncir Festivali hangi ayda yapılır?",
+        "question": "Buharkent Taze İncir Festivali her yıl hangi ayda düzenlenir?",
         "options": ["Mayıs", "Haziran", "Ağustos", "Ekim"],
         "correct": 2,
         "zorluk": "kolay"
     },
     {
-        "question": "Buharkent incirinin diğer bölgelerden haftalar önce olgunlaşmasını sağlayan en önemli özellik nedir?",
+        "question": "Buharkent Taze İncir Festivali'ni Türkiye'de özel kılan nedir?",
         "options": [
-            "Yüksek dağlık rakıma sahip olması",
-            "Jeotermal kaynakların yarattığı mikroklima etkisi",
-            "Şiddetli kuzey rüzgarları alması",
-            "Yıllık yağış ortalamasının çok düşük olması"
+            "Türkiye'nin ilk ve tek taze incir festivali olması",
+            "En uzun süren tarım festivali olması",
+            "Sadece kurutmalık incire ayrılmış olması",
+            "Yılda iki kez düzenlenen tek festival olması"
         ],
-        "correct": 1,
-        "zorluk": "zor"
-    },
-    {
-        "question": "Festivaldeki \"En İyi Taze İncir\" yarışmasında jürinin dikkate ALMADIĞI kriter hangisidir?",
-        "options": [
-            "Meyvenin dış görünüşü ve iriliği",
-            "İç dolgunluğu ve tat aroması",
-            "İncirin kabuk bütünlüğü",
-            "Çekirdeklerinin tamamen siyah olması"
-        ],
-        "correct": 3,
-        "zorluk": "orta"
-    },
-    {
-        "question": "Festivalde üreticiyi motive etmek ve kaliteyi artırmak için genellikle hangi yarışma düzenlenir?",
-        "options": [
-            "İncir reçeli yarışması",
-            "En kaliteli incir yetiştiricisi yarışması",
-            "İncir fidanı dikme yarışması",
-            "En hızlı incir toplama yarışması"
-        ],
-        "correct": 1,
+        "correct": 0,
         "zorluk": "kolay"
     },
     {
-        "question": "Buharkent incirinin ihracat pazarında stratejik öneme sahip olmasının nedeni nedir?",
+        "question": "Buharkent'in incir bahçelerine can veren, ilçenin ovasından geçen nehir hangisidir?",
+        "options": ["Kızılırmak", "Sakarya Nehri", "Gediz Nehri", "Büyük Menderes Nehri"],
+        "correct": 3,
+        "zorluk": "kolay"
+    },
+    {
+        "question": "Buharkent'in bugünkü adını almadan önceki ismi neydi?",
+        "options": ["Burhaniye", "Ortaklar", "Kuyucak", "Sarayköy"],
+        "correct": 0,
+        "zorluk": "orta"
+    },
+    {
+        "question": "Buharkent'in ilk kurulduğu, ilçe nüfusunun temelini oluşturan yerleşim yeri hangisidir?",
+        "options": ["Kızıldere", "Ortakçı", "Savcıllı", "Feslek"],
+        "correct": 1,
+        "zorluk": "orta"
+    },
+    {
+        "question": "İlçeye \"Buharkent\" adı hangi özelliğinden dolayı verilmiştir?",
         "options": [
-            "Turfanda ürün olarak pazara herkesten önce yüksek değerle girmesi",
-            "Sadece deniz yoluyla Asya ülkelerine gönderilebilmesi",
-            "Kurutulmadan raf ömrünün 1 yılı bulması",
-            "Organik sertifikaya sahip tek ilçe olması"
+            "Sabahları ovayı kaplayan sisten",
+            "Jeotermal kaynaklardan çıkan sıcak su ve buhardan",
+            "Eskiden buharlı trenlerin son durağı olmasından",
+            "Buhar gücüyle çalışan un değirmenlerinden"
         ],
+        "correct": 1,
+        "zorluk": "orta"
+    },
+    {
+        "question": "Buharkent hangi yıl ilçe statüsü kazanmıştır?",
+        "options": ["1955", "1972", "1987", "1994"],
+        "correct": 2,
+        "zorluk": "zor"
+    },
+    {
+        "question": "Buharkent'in düşman işgalinden kurtuluşu her yıl hangi tarihte kutlanır?",
+        "options": ["3 Eylül", "7 Eylül", "9 Eylül", "22 Ağustos"],
         "correct": 0,
         "zorluk": "zor"
     },
     {
-        "question": "Aşağıdakilerden hangisi Buharkent Taze İncir Festivali'nin klasik etkinliklerinden biri DEĞİLDİR?",
+        "question": "Buharkent'te taze incirin Türkiye'nin geri kalanından haftalar önce olgunlaşmasının sebebi nedir?",
         "options": [
-            "Konserler ve sahne performansları",
-            "Yöresel tarım ve el sanatları stantları",
-            "Geleneksel kışlık deve güreşleri",
-            "Yöresel halk oyunları gösterileri"
-        ],
-        "correct": 2,
-        "zorluk": "orta"
-    },
-    {
-        "question": "Yerel Eylem Grupları'nın (YEG) kırsal kalkınmadaki temel amacı aşağıdakilerden hangisidir?",
-        "options": [
-            "Tarım arazilerini sadece sanayiye açmak",
-            "Yöresel ürünü markalaştırıp kırsal ekonomiyi, istihdamı ve turizmi canlandırmak",
-            "İlçe nüfusunun büyük şehirlere göçünü teşvik etmek",
-            "Yalnızca yabancı yatırımcıları bölgeye çekmek"
+            "Yüksek rakımlı serin havası",
+            "Jeotermal kaynakların yarattığı sıcak mikroklima",
+            "Yıl boyu süren bol yağışı",
+            "Bahçelerin kuzeye bakan yamaçlarda olması"
         ],
         "correct": 1,
         "zorluk": "zor"
-    },
-    {
-        "question": "Buharkent'in tarım arazilerine can veren, incir bahçelerini bereketlendiren nehir hangisidir?",
-        "options": ["Kızılırmak", "Sakarya Nehri", "Gediz Nehri", "Büyük Menderes Nehri"],
-        "correct": 3,
-        "zorluk": "kolay"
     }
 ]
