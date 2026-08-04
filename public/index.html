@@ -74,6 +74,28 @@ body{
 .mini u{display:block; text-decoration:none; font-size:11px; letter-spacing:.14em; color:rgba(255,255,255,.6);
   text-transform:uppercase; font-weight:800}
 .mini b{font-family:'Bricolage Grotesque',sans-serif; font-size:26px; font-weight:800}
+/* Okuma fazı: telefonda "ekrana bak" ekranı */
+#hazir{align-items:center; justify-content:center; text-align:center; background:var(--mor)}
+.hazirNo{font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:15px;
+  letter-spacing:.3em; color:var(--neon); text-transform:uppercase}
+.hazirBaslik{font-family:'Bricolage Grotesque',sans-serif; font-weight:800;
+  font-size:clamp(30px,9vw,44px); margin:14px 0 8px; line-height:1.1}
+.zorlukEt{display:inline-block; padding:7px 16px; border-radius:99px; font-weight:800; font-size:13px;
+  letter-spacing:.14em; text-transform:uppercase; border:2px solid; margin-top:6px}
+.ze-kolay{color:#2BC275; border-color:#2BC275} .ze-orta{color:#FFB020; border-color:#FFB020}
+.ze-zor{color:#FF2E63; border-color:#FF2E63}
+.hazirCubuk{width:70%; max-width:280px; height:8px; border-radius:99px; background:rgba(255,255,255,.14);
+  overflow:hidden; margin-top:26px}
+.hazirCubuk i{display:block; height:100%; width:100%; background:var(--neon); transform-origin:left; transform:scaleX(0)}
+
+/* Kazanan çağrısı */
+#sonuc.kazanan{background:linear-gradient(160deg,#B8860B,#7A5A00)}
+.cagri{font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:clamp(22px,6.5vw,30px);
+  background:#fff; color:#1A0F35; padding:14px 22px; border-radius:16px; margin-top:20px; line-height:1.25;
+  animation:carp 1.3s ease-in-out infinite}
+@keyframes carp{50%{transform:scale(1.05)}}
+.adGoster{font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:clamp(26px,8vw,38px);
+  color:var(--neon); margin-top:14px; letter-spacing:.02em}
 @media(prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important}}
 </style>
 </head>
@@ -85,6 +107,15 @@ body{
   <div class="ad" id="adim">Bağlanıyor…</div>
   <div class="alt" id="mesaj"><span class="nabiz"></span>Sahnedeki ekranı izle, yarışma birazdan başlıyor.</div>
   <div class="puanKutu">Puanın <b id="puanim">0</b></div>
+</div>
+
+<!-- OKUMA FAZI -->
+<div class="perde" id="hazir">
+  <div class="hazirNo" id="hazirNo">SORU 1 / 10</div>
+  <div class="hazirBaslik">Ekrana bak</div>
+  <div class="alt">Soruyu oku, şıklar birazdan açılıyor</div>
+  <div class="zorlukEt ze-orta" id="hazirZorluk">ORTA</div>
+  <div class="hazirCubuk"><i id="hazirBar"></i></div>
 </div>
 
 <!-- SORU -->
@@ -124,7 +155,7 @@ const $ = id => document.getElementById(id);
 let sayacId = null, kilit = false;
 
 function goster(hangi){
-  ['lobi','soru','sonuc'].forEach(p => $(p).classList.toggle('acik', p === hangi));
+  ['lobi','hazir','soru','sonuc'].forEach(p => $(p).classList.toggle('acik', p === hangi));
 }
 function titre(ms){ if(navigator.vibrate) try{ navigator.vibrate(ms); }catch(e){} }
 
@@ -136,6 +167,24 @@ socket.on('hosgeldin', d => {
   $('adim').innerText = d.ad;
   $('puanim').innerText = d.puan;
   if (d.durum !== 'soru') goster('lobi');
+});
+
+/* --- okuma fazı: butonlar henüz yok, ekrana bak --- */
+socket.on('soruOkuma', d => {
+  kilit = false;
+  clearInterval(sayacId);
+  $('hazirNo').innerText = `SORU ${d.no} / ${d.toplam}`;
+  const z = d.zorluk || 'orta';
+  $('hazirZorluk').className = 'zorlukEt ze-' + z;
+  $('hazirZorluk').innerText = z.toUpperCase() + (d.katsayi && d.katsayi !== 1 ? ` · ×${d.katsayi} PUAN` : '');
+  goster('hazir');
+  const bar = $('hazirBar');
+  bar.style.transition = 'none'; bar.style.transform = 'scaleX(0)';
+  requestAnimationFrame(() => {
+    bar.style.transition = `transform ${d.kalan}s linear`;
+    bar.style.transform = 'scaleX(1)';
+  });
+  titre(20);
 });
 
 /* --- soru geldi --- */
@@ -237,13 +286,26 @@ function boya(dogru, puan, seri){
 /* --- final --- */
 socket.on('finalSiran', d => {
   const e = $('sonuc');
-  e.className = 'perde acik notr';
-  $('ikon').innerText = d.sira <= 3 ? '🏆' : '🎉';
-  $('sonucBaslik').innerText = 'Yarışma bitti';
+  const ilk3 = d.sira <= 3;
+  e.className = 'perde acik ' + (ilk3 ? 'kazanan' : 'notr');
+  $('ikon').innerText = ilk3 ? '🏆' : '🎉';
+  $('sonucBaslik').innerText = ilk3 ? `${d.sira}. OLDUN!` : 'Yarışma bitti';
   $('kazanc').innerText = d.toplamPuan + ' puan';
   $('sonucDetay').innerText = `${d.kisiSayisi} kişi arasında ${d.sira}. oldun.`;
   $('seriKutu').style.display = 'none';
   $('siraKutu').style.display = 'none';
+
+  // Kazanan bu ekranı görevliye gösterip ödülünü alacak
+  const eski = document.getElementById('cagriKutu');
+  if (eski) eski.remove();
+  if (ilk3){
+    const k = document.createElement('div');
+    k.id = 'cagriKutu';
+    k.innerHTML = '<div class="cagri">SAHNEYE GEL<br>Bu ekranı görevliye göster</div>' +
+                  '<div class="adGoster">' + $('adim').innerText + '</div>';
+    e.appendChild(k);
+    titre([80,60,80,60,140]);
+  }
   goster('sonuc');
 });
 

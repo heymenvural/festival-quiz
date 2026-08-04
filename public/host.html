@@ -92,6 +92,28 @@ h1{font-family:'Bricolage Grotesque',sans-serif; font-weight:800; margin:0; line
   background:var(--neon); font-variant-numeric:tabular-nums; box-shadow:0 0 60px rgba(255,228,94,.35)}
 .sayac.kritik{background:var(--s0); color:#fff; animation:nabiz .6s ease-in-out infinite}
 @keyframes nabiz{50%{transform:scale(1.09)}}
+/* Zorluk rozeti */
+.zorluk{display:inline-flex; align-items:center; gap:.5vw; padding:.7vh 1.2vw; border-radius:99px;
+  font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:1.25vw; letter-spacing:.1em;
+  text-transform:uppercase; border:2px solid}
+.z-kolay{color:#2BC275; border-color:#2BC275; background:rgba(43,194,117,.14)}
+.z-orta{color:#FFB020; border-color:#FFB020; background:rgba(255,176,32,.14)}
+.z-zor{color:#FF2E63; border-color:#FF2E63; background:rgba(255,46,99,.16)}
+.zorluk .kat{font-size:1.05vw; opacity:.85}
+
+/* Okuma fazı: soru tek başına dururken dolan çubuk */
+#okuma{align-items:center; justify-content:center; text-align:center; gap:2.5vh}
+.hazirlan{width:52vw; height:10px; border-radius:99px; background:rgba(255,255,255,.12); overflow:hidden}
+.hazirlan i{display:block; height:100%; width:100%; background:linear-gradient(90deg,var(--neon),var(--s0));
+  transform-origin:left; transform:scaleX(0)}
+.hazirlanYazi{color:var(--sis); font-size:1.3vw; font-weight:800; letter-spacing:.22em; text-transform:uppercase}
+
+/* Host uyarı balonu */
+#uyari{position:fixed; left:50%; top:2vh; transform:translateX(-50%) translateY(-140%); z-index:40;
+  background:var(--s0); color:#fff; font-weight:800; font-size:1.2vw; padding:1.2vh 2.2vw;
+  border-radius:99px; box-shadow:0 14px 40px rgba(0,0,0,.5); transition:transform .35s cubic-bezier(.2,1.4,.4,1)}
+#uyari.acik{transform:translateX(-50%) translateY(0)}
+
 .cevapSayaci{font-family:'Bricolage Grotesque',sans-serif; font-weight:800; font-size:3vh; text-align:right}
 .cevapSayaci small{display:block; font-family:'Manrope'; font-size:1.1vh; letter-spacing:.25em;
   color:var(--sis); text-transform:uppercase; margin-top:.4vh}
@@ -190,11 +212,23 @@ h1{font-family:'Bricolage Grotesque',sans-serif; font-weight:800; margin:0; line
   <button class="buton" onclick="devam()">Yarışmayı başlat</button>
 </div>
 
+<!-- OKUMA FAZI: soru tek başına, şıklar henüz yok -->
+<div class="sahne" id="okuma">
+  <div class="rozet" id="okumaNo">SORU 1 / 10</div>
+  <div class="zorluk z-orta" id="okumaZorluk">ORTA</div>
+  <div class="soruMetni" id="okumaMetin">—</div>
+  <div class="hazirlan"><i id="hazirlanBar"></i></div>
+  <div class="hazirlanYazi">Şıklar açılıyor</div>
+</div>
+
 <!-- SORU -->
 <div class="sahne" id="soru">
   <div class="satirUst">
     <div class="sayac" id="sayac">20</div>
-    <div class="rozet" id="soruNo">SORU 1 / 10</div>
+    <div style="text-align:center">
+      <div class="rozet" id="soruNo">SORU 1 / 10</div>
+      <div class="zorluk z-orta" id="soruZorluk" style="margin-top:.8vh">ORTA</div>
+    </div>
     <div class="cevapSayaci"><span id="cevapSayi">0</span><small>cevap geldi</small></div>
   </div>
   <div class="soruMetni" id="soruMetni">—</div>
@@ -225,6 +259,8 @@ h1{font-family:'Bricolage Grotesque',sans-serif; font-weight:800; margin:0; line
   <div class="kalanlar" id="kalanlar"></div>
 </div>
 
+<div id="uyari"></div>
+
 <!-- KÖŞE QR: yarışma sürerken geç kalanlar da katılabilsin -->
 <div id="qrMini">
   <div class="kutu"><img id="qrMiniKod" src="/qr.svg" alt=""></div>
@@ -236,47 +272,108 @@ h1{font-family:'Bricolage Grotesque',sans-serif; font-weight:800; margin:0; line
 const socket = io({ transports:['websocket','polling'] });
 const $ = id => document.getElementById(id);
 const SEKIL = ['▲','◆','●','■'];
-let sayacId = null, yetkili = false, sonSoru = false;
+let sayacId = null, yetkili = false;
+
+/* ============ SES ============
+   Dosya yok, sesler tarayıcıda üretiliyor. Tarayıcılar kendiliğinden ses
+   çalmaya izin vermediği için ilk tıklamada (şifre girişi) devreye giriyor. */
+const Ses = (() => {
+  let ctx = null, acik = true;
+  function baslat(){
+    try{
+      if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)();
+      if (ctx.state === 'suspended') ctx.resume();
+    }catch(e){}
+  }
+  function ton(hz, sure, tip, siddet, gecikme){
+    if (!ctx || !acik) return;
+    const t = ctx.currentTime + (gecikme || 0);
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = tip || 'sine';
+    o.frequency.setValueAtTime(hz, t);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(siddet, t + .012);
+    g.gain.exponentialRampToValueAtTime(.0001, t + sure);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(t); o.stop(t + sure + .03);
+  }
+  return {
+    baslat,
+    degistir(){ acik = !acik; return acik; },
+    tik(kalan){ ton(kalan <= 2 ? 1500 : 950, .07, 'square', .16); },
+    soruAcildi(){ ton(520,.12,'triangle',.20); ton(784,.18,'triangle',.20,.11); },
+    okumaBasladi(){ ton(392,.16,'sine',.16); },
+    sureBitti(){ ton(320,.26,'sawtooth',.18); ton(190,.42,'sawtooth',.16,.16); },
+    cevapAcildi(){ [523,659,784,1046].forEach((f,i) => ton(f,.32,'triangle',.16,i*.085)); },
+    final(){ [523,659,784,1046,1318,1568].forEach((f,i) => ton(f,.55,'triangle',.18,i*.13)); }
+  };
+})();
 
 function goster(h){
-  ['giris','lobi','soru','sonuc','final'].forEach(s => $(s).classList.toggle('acik', s === h));
+  ['giris','lobi','okuma','soru','sonuc','final'].forEach(x => $(x).classList.toggle('acik', x === h));
   // Yarışma sürerken küçük QR köşede dursun, geç gelen de katılabilsin
-  $('qrMini').classList.toggle('acik', h === 'soru' || h === 'sonuc');
+  $('qrMini').classList.toggle('acik', h === 'okuma' || h === 'soru' || h === 'sonuc');
 }
 
-/* --- giriş --- */
-function girisYap(){ socket.emit('hostGiris', $('sifre').value); }
-$('sifre').addEventListener('keydown', e => { if(e.key === 'Enter') girisYap(); });
+function zorlukYaz(el, zorluk, katsayi){
+  const ad = (zorluk || 'orta').toUpperCase();
+  el.className = 'zorluk z-' + (zorluk || 'orta');
+  el.innerHTML = ad + (katsayi && katsayi !== 1 ? ' <span class="kat">×' + katsayi + ' puan</span>' : '');
+}
+
+function uyar(mesaj){
+  const e = $('uyari');
+  e.innerText = mesaj;
+  e.classList.add('acik');
+  clearTimeout(e._z);
+  e._z = setTimeout(() => e.classList.remove('acik'), 2600);
+}
+
+/* ============ GİRİŞ ============ */
+function girisYap(){ Ses.baslat(); socket.emit('hostGiris', $('sifre').value); }
+$('sifre').addEventListener('keydown', e => { if (e.key === 'Enter') girisYap(); });
 socket.on('hostRed', () => { localStorage.removeItem('fq_host'); $('hata').innerText = 'Şifre yanlış.'; });
-socket.on('hostOnay', d => {
-  yetkili = true;
-  localStorage.setItem('fq_host', $('sifre').value || localStorage.getItem('fq_host'));
-  $('sayi').innerText = d.oyuncu;
-  if (d.durum === 'lobi' || d.durum === 'bitti') goster('lobi');
-  qrCiz();
-});
+socket.on('hostUyari', m => uyar(m));
+
 // Şifre bir kere girilir, bu tarayıcıda hatırlanır
 socket.on('connect', () => {
   const s = localStorage.getItem('fq_host');
   if (s) socket.emit('hostGiris', s);
 });
 
-/* --- katılım linki + QR --- */
+// Ekran kazara yenilenirse yarışma kaldığı yerden devam eder
+socket.on('hostOnay', d => {
+  yetkili = true;
+  localStorage.setItem('fq_host', $('sifre').value || localStorage.getItem('fq_host'));
+  $('sayi').innerText = d.oyuncu;
+  qrCiz();
+
+  if (d.durum === 'okuma' && d.okuma)      okumaGoster(d.okuma, true);
+  else if (d.durum === 'soru' && d.soru)   { soruGoster(d.soru, true); $('cevapSayi').innerText = d.cevaplayan || 0; }
+  else if (d.durum === 'sonuc' && d.sonuc) sonucGoster(d.sonuc, true);
+  else if (d.durum === 'bitti' && d.final) finalGoster(d.final, true);
+  else goster('lobi');
+});
+
+/* ============ KATILIM LİNKİ + QR ============ */
 function qrCiz(){
   const kisa = location.host;
   $('link').innerText = kisa;
   $('qrMiniLink').innerText = kisa;
-  // Karekod sunucudan geliyor; tazelemek için adresi bir kez yeniliyoruz
   const src = '/qr.svg?t=' + Date.now();
   $('qr').src = src;
   $('qrMiniKod').src = src;
 }
 
-function devam(){ if (yetkili) socket.emit('hostDevam'); }
+/* ============ KONTROL ============ */
+function devam(){ if (yetkili){ Ses.baslat(); socket.emit('hostDevam'); } }
 document.addEventListener('keydown', e => {
   if (!yetkili) return;
   if (e.code === 'Space'){ e.preventDefault(); devam(); }
-  if (e.key === 'r' || e.key === 'R'){ if (confirm('Yarışma sıfırlansın mı? Tüm puanlar silinir.')) socket.emit('hostSifirla'); }
+  if (e.key === 'm' || e.key === 'M'){ uyar(Ses.degistir() ? 'Ses açık' : 'Ses kapalı'); }
+  if (e.key === 'r' || e.key === 'R'){
+    if (confirm('Yarışma sıfırlansın mı? Tüm puanlar silinir.')) socket.emit('hostSifirla');
+  }
 });
 
 socket.on('oyuncuSayisi', n => {
@@ -288,36 +385,62 @@ socket.on('oyuncuSayisi', n => {
 });
 socket.on('cevapSayisi', d => $('cevapSayi').innerText = d.cevaplayan);
 
-/* --- soru --- */
-socket.on('soru', d => {
+/* ============ OKUMA FAZI ============ */
+socket.on('soruOkuma', d => okumaGoster(d));
+
+function okumaGoster(d, sessiz){
+  clearInterval(sayacId);
+  $('okumaNo').innerText = `SORU ${d.no} / ${d.toplam}`;
+  $('okumaMetin').innerText = d.metin;
+  zorlukYaz($('okumaZorluk'), d.zorluk, d.katsayi);
+  goster('okuma');
+  if (!sessiz) Ses.okumaBasladi();
+
+  const bar = $('hazirlanBar');
+  bar.style.transition = 'none';
+  bar.style.transform = 'scaleX(0)';
+  requestAnimationFrame(() => {
+    bar.style.transition = `transform ${d.kalan}s linear`;
+    bar.style.transform = 'scaleX(1)';
+  });
+}
+
+/* ============ SORU ============ */
+socket.on('soru', d => soruGoster(d));
+
+function soruGoster(d, sessiz){
   $('soruNo').innerText = `SORU ${d.no} / ${d.toplam}`;
   $('soruMetni').innerText = d.metin;
+  zorlukYaz($('soruZorluk'), d.zorluk, d.katsayi);
   $('cevapSayi').innerText = '0';
   $('izgara').innerHTML = d.siklar.map((s,i) =>
     `<div class="sik k${i}" id="sik${i}" style="animation-delay:${.12+i*.09}s"><span class="sekil">${SEKIL[i]}</span>${s}<span class="tik">✓</span></div>`
   ).join('');
   goster('soru');
+  if (!sessiz) Ses.soruAcildi();
   sayacBaslat(d.sure);
-});
+}
 
 function sayacBaslat(sn){
   clearInterval(sayacId);
-  let k = sn;
+  let k = Math.round(sn);
   $('sayac').innerText = k;
-  $('sayac').classList.remove('kritik');
+  $('sayac').classList.toggle('kritik', k <= 5);
   sayacId = setInterval(() => {
     k--;
-    $('sayac').innerText = Math.max(0,k);
+    $('sayac').innerText = Math.max(0, k);
     if (k <= 5) $('sayac').classList.add('kritik');
-    if (k <= 0) clearInterval(sayacId);
+    if (k <= 5 && k > 0) Ses.tik(k);
+    if (k <= 0){ clearInterval(sayacId); Ses.sureBitti(); }
   }, 1000);
 }
 
-/* --- soru bitti: dağılım + ilk 10 --- */
-socket.on('soruBitti', d => {
+/* ============ SORU BİTTİ: dağılım + ilk 10 ============ */
+socket.on('soruBitti', d => sonucGoster(d));
+
+function sonucGoster(d, sessiz){
   clearInterval(sayacId);
-  sonSoru = d.sonSoru;
-  $('devamBtn').innerText = sonSoru ? 'Şampiyonları göster 🏆' : 'Sonraki soru →';
+  $('devamBtn').innerText = d.sonSoru ? 'Şampiyonları göster 🏆' : 'Sonraki soru →';
   $('dogruMetni').innerText = `${SEKIL[d.dogruSik]}  ${d.dogruMetin}`;
 
   const enYuksek = Math.max(1, ...d.dagilim);
@@ -339,14 +462,18 @@ socket.on('soruBitti', d => {
 
   $('sonucBaslik').innerText = `${d.cevaplayan} / ${d.toplamOyuncu} kişi cevapladı`;
   goster('sonuc');
-});
+  if (!sessiz) Ses.cevapAcildi();
+}
 
-/* --- final --- */
-socket.on('oyunBitti', liste => {
+/* ============ FİNAL ============ */
+socket.on('oyunBitti', liste => finalGoster(liste));
+
+function finalGoster(liste, sessiz){
+  clearInterval(sayacId);
   const ilk3 = liste.slice(0,3);
   const madalya = ['🥇','🥈','🥉'];
-  const sira = [1,0,2];   // 2. - 1. - 3. dizilimi
-  $('podyum').innerHTML = sira.filter(i => ilk3[i]).map(i => `
+  const dizilim = [1,0,2];   // 2. - 1. - 3.
+  $('podyum').innerHTML = dizilim.filter(i => ilk3[i]).map(i => `
     <div class="basamak b${i+1}" style="animation-delay:${(2-i)*.18}s">
       <div class="m">${madalya[i]}</div>
       <div class="isim">${ilk3[i].ad}</div>
@@ -355,7 +482,8 @@ socket.on('oyunBitti', liste => {
   $('kalanlar').innerHTML = liste.slice(3).map((p,i) =>
     `<div class="sira"><span class="no">${i+4}</span><span>${p.ad}</span><span class="p">${p.puan}</span></div>`).join('');
   goster('final');
-});
+  if (!sessiz) Ses.final();
+}
 
 socket.on('sifirla', () => { clearInterval(sayacId); goster('lobi'); qrCiz(); });
 </script>

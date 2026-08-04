@@ -20,7 +20,19 @@ const AYAR = {
     // Host ekranına giriş şifresi. Sabit: buharkent09
     HOST_SIFRE: process.env.HOST_KEY || 'buharkent09',
 
-    VARSAYILAN_SURE: 20,      // questions.json'da "sure" yazmayan sorular için saniye
+    // Soru okuma süresi: soru ekranda tek başına durur, sayaç henüz başlamaz.
+    // Kalabalıkta herkesin soruyu okumaya vakti olsun diye.
+    OKUMA_SURESI: 4,
+
+    // Soru başladıktan sonra kaç saniye boyunca "devam" tuşu yok sayılsın.
+    // Yanlışlıkla iki kere basılıp sorunun uçmasını engeller.
+    ATLAMA_KILIDI: 4,
+
+    // Zorluğa göre puan çarpanı ve varsayılan süre
+    ZORLUK_KATSAYI: { kolay: 1, orta: 1.25, zor: 1.5 },
+    ZORLUK_SURE:    { kolay: 12, orta: 18, zor: 22 },
+
+    VARSAYILAN_SURE: 18,      // zorluğu belirtilmemiş sorular için saniye
     TABAN_PUAN: 500,          // doğru cevabın garanti puanı
     MAX_PUAN: 1000,           // en hızlı cevabın puanı
     SERI_BONUSU: true,        // üst üste doğru yapana ekstra puan
@@ -46,7 +58,16 @@ function sorulariYukle() {
         if (typeof s.correct !== 'number' || s.correct < 0 || s.correct > 3) {
             throw new Error(`${i + 1}. soruda "correct" 0-3 arasında olmalı.`);
         }
-        return { ...s, sure: s.sure || AYAR.VARSAYILAN_SURE };
+        const zorluk = (s.zorluk || 'orta').toLowerCase();
+        if (!AYAR.ZORLUK_KATSAYI[zorluk]) {
+            throw new Error(`${i + 1}. soruda "zorluk" kolay/orta/zor olmalı.`);
+        }
+        return {
+            ...s,
+            zorluk,
+            sure: s.sure || AYAR.ZORLUK_SURE[zorluk] || AYAR.VARSAYILAN_SURE,
+            katsayi: AYAR.ZORLUK_KATSAYI[zorluk]
+        };
     });
     console.log(`📋 ${sorular.length} soru yüklendi.`);
 }
@@ -59,12 +80,15 @@ const oyuncular = new Map();   // pid -> { pid, ad, puan, seri, socketId, kopmaZ
 const hostlar = new Set();     // yetkili host socket id'leri
 
 const oyun = {
-    durum: 'lobi',   // lobi | soru | sonuc | bitti
+    durum: 'lobi',   // lobi | okuma | soru | sonuc | bitti
     index: -1,
     baslangic: 0,
+    okumaBitis: 0,
     sure: 0,
     zamanlayici: null,
-    cevaplar: new Map()  // pid -> { sik, dogru, puan }
+    cevaplar: new Map(),  // pid -> { sik, dogru, puan }
+    sonSonuc: null,       // host ekranı yenilenirse geri yükleyebilmek için
+    sonFinal: null
 };
 
 const rastgeleAd = () => `Festivalci #${Math.floor(1000 + Math.random() * 9000)}`;
@@ -103,6 +127,7 @@ function tabloGonder() {
 /* ------------------------------------------------------------------
    OYUN AKIŞI
 ------------------------------------------------------------------ */
+// Soru önce tek başına ekranda durur (okuma fazı), sonra şıklar açılıp sayaç başlar
 function soruBaslat() {
     clearTimeout(oyun.zamanlayici);
     oyun.index++;
@@ -110,20 +135,40 @@ function soruBaslat() {
     if (oyun.index >= sorular.length) return oyunuBitir();
 
     const s = sorular[oyun.index];
-    oyun.durum = 'soru';
+    oyun.durum = 'okuma';
     oyun.sure = s.sure;
     oyun.cevaplar = new Map();
+    oyun.okumaBitis = Date.now() + AYAR.OKUMA_SURESI * 1000;
+
+    io.emit('soruOkuma', okumaPaketi());
+    oyun.zamanlayici = setTimeout(soruAc, AYAR.OKUMA_SURESI * 1000);
+}
+
+function okumaPaketi() {
+    const s = sorular[oyun.index];
+    return {
+        no: oyun.index + 1, toplam: sorular.length,
+        metin: s.question, zorluk: s.zorluk, katsayi: s.katsayi,
+        kalan: Math.max(0.5, (oyun.okumaBitis - Date.now()) / 1000)
+    };
+}
+
+function soruPaketi(kalanSure) {
+    const s = sorular[oyun.index];
+    return {
+        no: oyun.index + 1, toplam: sorular.length,
+        metin: s.question, siklar: s.options,
+        zorluk: s.zorluk, katsayi: s.katsayi,
+        sure: kalanSure != null ? kalanSure : s.sure,
+        tamSure: s.sure
+    };
+}
+
+function soruAc() {
+    const s = sorular[oyun.index];
+    oyun.durum = 'soru';
     oyun.baslangic = Date.now();
-
-    io.emit('soru', {
-        no: oyun.index + 1,
-        toplam: sorular.length,
-        metin: s.question,
-        siklar: s.options,
-        sure: s.sure
-    });
-
-    // Süre dolunca otomatik kapat (+ ağ gecikmesi payı)
+    io.emit('soru', soruPaketi());
     oyun.zamanlayici = setTimeout(soruBitir, s.sure * 1000 + 500);
 }
 
@@ -140,7 +185,7 @@ function soruBitir() {
     const sira = new Map(sirali.map((o, i) => [o.pid, i + 1]));
 
     // Dev ekran: doğru şık + cevap dağılımı + ilk 10
-    io.emit('soruBitti', {
+    oyun.sonSonuc = {
         dogruSik: s.correct,
         dogruMetin: s.options[s.correct],
         siklar: s.options,
@@ -148,8 +193,10 @@ function soruBitir() {
         cevaplayan: oyun.cevaplar.size,
         toplamOyuncu: bagliSayisi(),
         ilk10: sirali.slice(0, 10).map(o => ({ ad: o.ad, puan: o.puan })),
-        sonSoru: oyun.index === sorular.length - 1
-    });
+        sonSoru: oyun.index === sorular.length - 1,
+        zorluk: s.zorluk
+    };
+    io.emit('soruBitti', oyun.sonSonuc);
 
     // Her telefona kendi kişisel sonucu
     for (const o of oyuncular.values()) {
@@ -175,7 +222,8 @@ function oyunuBitir() {
     const sirali = siralama();
     const sira = new Map(sirali.map((o, i) => [o.pid, i + 1]));
 
-    io.emit('oyunBitti', sirali.slice(0, 10).map(o => ({ ad: o.ad, puan: o.puan })));
+    oyun.sonFinal = sirali.slice(0, 10).map(o => ({ ad: o.ad, puan: o.puan }));
+    io.emit('oyunBitti', oyun.sonFinal);
 
     for (const o of oyuncular.values()) {
         if (!o.socketId) continue;
@@ -192,6 +240,8 @@ function oyunuSifirla() {
     oyun.durum = 'lobi';
     oyun.index = -1;
     oyun.cevaplar = new Map();
+    oyun.sonSonuc = null;
+    oyun.sonFinal = null;
     for (const o of oyuncular.values()) { o.puan = 0; o.seri = 0; }
     sorulariYukle();
     io.emit('sifirla');
@@ -227,14 +277,12 @@ io.on('connection', (socket) => {
             cevapVerdiMi: oyun.cevaplar.has(oyuncu.pid)
         });
 
-        // Oyun sürerken katılan/geri dönen kişiye mevcut soruyu kalan süresiyle gönder
-        if (oyun.durum === 'soru') {
-            const s = sorular[oyun.index];
+        // Oyun sürerken katılan/geri dönen kişiye mevcut aşamayı kalan süresiyle gönder
+        if (oyun.durum === 'okuma') {
+            socket.emit('soruOkuma', okumaPaketi());
+        } else if (oyun.durum === 'soru') {
             const kalan = Math.max(1, Math.round((oyun.baslangic + oyun.sure * 1000 - Date.now()) / 1000));
-            socket.emit('soru', {
-                no: oyun.index + 1, toplam: sorular.length,
-                metin: s.question, siklar: s.options, sure: kalan
-            });
+            socket.emit('soru', soruPaketi(kalan));
         }
 
         tabloGonder();
@@ -258,7 +306,7 @@ io.on('connection', (socket) => {
 
         if (dogru) {
             const oran = Math.max(0, 1 - gecen / oyun.sure);
-            puan = Math.round(AYAR.TABAN_PUAN + (AYAR.MAX_PUAN - AYAR.TABAN_PUAN) * oran);
+            puan = Math.round((AYAR.TABAN_PUAN + (AYAR.MAX_PUAN - AYAR.TABAN_PUAN) * oran) * s.katsayi);
             oyuncu.seri++;
             if (AYAR.SERI_BONUSU && oyuncu.seri > 1) {
                 puan += Math.min(oyuncu.seri - 1, 5) * AYAR.SERI_BONUS_PUAN;
@@ -287,11 +335,23 @@ io.on('connection', (socket) => {
     socket.on('hostGiris', (sifre) => {
         if (sifre !== AYAR.HOST_SIFRE) return socket.emit('hostRed');
         hostlar.add(socket.id);
+
+        // Ekran kazara yenilenirse yarışma kaldığı yerden görünsün
+        let kalanSoru = null;
+        if (oyun.durum === 'soru') {
+            kalanSoru = soruPaketi(Math.max(1,
+                Math.round((oyun.baslangic + oyun.sure * 1000 - Date.now()) / 1000)));
+        }
         socket.emit('hostOnay', {
             durum: oyun.durum,
             oyuncu: bagliSayisi(),
             soruSayisi: sorular.length,
-            index: oyun.index
+            index: oyun.index,
+            okuma: oyun.durum === 'okuma' ? okumaPaketi() : null,
+            soru: kalanSoru,
+            sonuc: oyun.durum === 'sonuc' ? oyun.sonSonuc : null,
+            final: oyun.durum === 'bitti' ? oyun.sonFinal : null,
+            cevaplayan: oyun.cevaplar.size
         });
     });
 
@@ -299,7 +359,19 @@ io.on('connection', (socket) => {
 
     socket.on('hostDevam', () => {
         if (!hostMu()) return;
-        if (oyun.durum === 'soru') return soruBitir();      // süreyi kesip sonucu göster
+
+        // Okuma fazında basılan tuş yok sayılır
+        if (oyun.durum === 'okuma') return;
+
+        if (oyun.durum === 'soru') {
+            // Yanlışlıkla arka arkaya basıp soruyu uçurmayı engelle
+            const gecen = (Date.now() - oyun.baslangic) / 1000;
+            if (gecen < AYAR.ATLAMA_KILIDI) {
+                return socket.emit('hostUyari', 'Soru yeni başladı. Birkaç saniye sonra tekrar dene.');
+            }
+            return soruBitir();   // süreyi kesip sonucu göster
+        }
+
         if (oyun.durum === 'bitti') return;
         soruBaslat();
     });
