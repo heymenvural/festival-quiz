@@ -40,11 +40,11 @@ body::after{content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
 body{
   margin:0; min-height:100vh; background:var(--gece); color:#fff; overflow:hidden;
   font-family:'Manrope',system-ui,sans-serif;
-  /* public/arkaplan.jpg dosyası varsa arka plan olur, yoksa mor degrade kalır */
+  /* public/ içindeki arkaplan.jpg veya arkaplan.png varsa arka plan olur */
   background-image:
     radial-gradient(120vw 70vh at 50% -25%, rgba(124,58,237,.45), transparent 65%),
     radial-gradient(70vw 50vh at 10% 110%, rgba(255,46,99,.22), transparent 60%),
-    url('/arkaplan.jpg');
+    url('/arkaplan');
   background-size:auto, auto, cover;
   background-position:center;
   background-repeat:no-repeat;

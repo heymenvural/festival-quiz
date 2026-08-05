@@ -405,6 +405,17 @@ setInterval(() => {
 ------------------------------------------------------------------ */
 app.use(express.static(path.join(__dirname, 'public'), { maxAge: '1h' }));
 app.get('/host', (_, res) => res.sendFile(path.join(__dirname, 'public', 'host.html')));
+// Arka plan görseli: jpg, png, jpeg veya webp — hangisi varsa onu servis eder.
+// Böylece dosya adının uzantısıyla uğraşmaya gerek kalmaz.
+app.get('/arkaplan', (req, res) => {
+    const adaylar = ['arkaplan.jpg', 'arkaplan.png', 'arkaplan.jpeg', 'arkaplan.webp'];
+    for (const ad of adaylar) {
+        const yol = path.join(__dirname, 'public', ad);
+        if (fs.existsSync(yol)) return res.sendFile(yol);
+    }
+    res.status(404).end();   // görsel yoksa mor zemin kalır
+});
+
 // Karekod sunucuda üretilir: dış CDN'e bağımlı değil, adresi isteğin kendisinden alır
 app.get('/qr.svg', async (req, res) => {
     try {
